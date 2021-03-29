@@ -1,0 +1,57 @@
+package com.healint.FileHandling.controller;
+
+import com.healint.FileHandling.helper.CSVHelper;
+import com.healint.FileHandling.message.ResponseMessage;
+import com.healint.FileHandling.model.StoreModel;
+import com.healint.FileHandling.service.StoreService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@Controller
+@RequestMapping("/api/csv")
+public class StoreController {
+
+    @Autowired
+    StoreService storeService;
+
+    @PostMapping("/upload")
+    public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
+        String message = "";
+
+        if (CSVHelper.hasCSVFormat(file)) {
+            try {
+                storeService.save(file);
+
+                message = "Uploaded the file successfully: " + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
+            } catch (Exception e) {
+                message = "Could not upload the file: " + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
+            }
+        }
+        message = "Please upload a csv file!";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(message));
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<List<StoreModel>> getAllTutorials() {
+        try {
+            List<StoreModel> storeModels = storeService.getAllStoreModels();
+            if (storeModels.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(storeModels, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
